@@ -1,18 +1,7 @@
-import { IsEmail, IsString, IsStrongPassword } from 'class-validator';
+import { IsString } from 'class-validator';
+import { AuthLoginDto } from 'src/auth/dto/auth-login.dto';
 
-export class CreateUserDto {
+export class CreateUserDto extends AuthLoginDto {
   @IsString()
   name: string;
-
-  @IsEmail()
-  email: string;
-
-  @IsStrongPassword({
-    minLength: 10,
-    minNumbers: 1,
-    minLowercase: 1,
-    minUppercase: 1,
-    minSymbols: 1,
-  })
-  password: string;
 }

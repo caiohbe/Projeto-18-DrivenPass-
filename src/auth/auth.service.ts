@@ -1,26 +1,75 @@
-import { Injectable } from '@nestjs/common';
-import { CreateAuthDto } from './dto/create-auth.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
+import {
+  Injectable,
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { User } from '@prisma/client';
+import { LoginAuthDto } from 'src/users/dto/update-user.dto';
+import { UserRepository } from 'src/users/user.repository';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
-  create(createAuthDto: CreateAuthDto) {
-    return 'This action adds a new auth';
+  private EXPIRATION_TIME = '7 days';
+  private ISSUER = 'Driven';
+  private AUDIENCE = 'users';
+
+  constructor(
+    private readonly jwtService: JwtService,
+    private readonly userRepository: UserRepository,
+  ) {}
+
+  async createToken(user: User) {
+    const { name, email } = user;
+    const token = this.jwtService.sign(
+      {
+        name,
+        email,
+      },
+      {
+        expiresIn: this.EXPIRATION_TIME,
+        subject: String(user.id),
+        issuer: this.ISSUER,
+        audience: this.AUDIENCE,
+      },
+    );
+
+    return {
+      accessToken: token,
+    };
   }
 
-  findAll() {
-    return `This action returns all auth`;
+  async checkToken(token: string) {
+    try {
+      const data = this.jwtService.verify(token, {
+        audience: this.AUDIENCE,
+        issuer: this.ISSUER,
+      });
+
+      return data;
+    } catch (error) {
+      console.log(error);
+      throw new BadRequestException(error);
+    }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} auth`;
-  }
+  async login(user: LoginAuthDto) {
+    const { email, password } = user;
+    const registeredUser = await this.userRepository.findByEmail(email);
+    if (!registeredUser) {
+      throw new HttpException('Email não registrado.', HttpStatus.NOT_FOUND);
+    }
 
-  update(id: number, updateAuthDto: UpdateAuthDto) {
-    return `This action updates a #${id} auth`;
-  }
+    const isPasswordValid = bcrypt.compareSync(
+      password,
+      registeredUser.password,
+    );
+    if (!isPasswordValid) {
+      throw new HttpException('Senha incorreta.', HttpStatus.CONFLICT);
+    }
 
-  remove(id: number) {
-    return `This action removes a #${id} auth`;
+    return this.createToken(registeredUser);
   }
 }

@@ -19,4 +19,10 @@ export class UserRepository {
       },
     });
   }
+
+  async findById(id: number) {
+    return await this.prismaService.user.findFirst({
+      where: { id },
+    });
+  }
 }
