@@ -7,8 +7,9 @@ export class UserRepository {
   constructor(private readonly prismaService: PrismaService) {}
 
   async create(user: User) {
+    const { email, password, name } = user;
     return await this.prismaService.user.create({
-      data: { ...user },
+      data: { email, password, name },
     });
   }
 

@@ -16,7 +16,7 @@ export class UsersService {
 
   constructor(private userRepository: UserRepository) {}
 
-  async create(@Body() body: CreateUserDto) {
+  async create(body: CreateUserDto) {
     const email = body.email;
     const registeredUser = await this.userRepository.findByEmail(email);
     if (registeredUser) {
